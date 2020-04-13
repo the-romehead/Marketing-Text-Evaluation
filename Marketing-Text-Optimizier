@@ -1,0 +1,76 @@
+import pytrends
+from pytrends.request import TrendReq
+import pandas as pd
+import time
+import datetime
+from datetime import datetime, date, time
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+def remove_duplicates(x):
+  return list(dict.fromkeys(x))
+
+from py_openthesaurus import OpenThesaurusWeb
+ChunkSize = remove_duplicates("Wir liefern die Daten, die Ihnen wirklich helfen".split(" "))
+ChunkSize = list(dict.fromkeys(ChunkSize))
+ChunkSize
+
+
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+open_thesaurus = OpenThesaurusWeb()
+for i,word in enumerate(ChunkSize):
+    
+    clean_word = word.replace(" ","").replace(",","").replace(".","").replace(":","").replace("-"," ")
+
+    # to get the short version of synonyms as a list
+    synonyms = open_thesaurus.get_synonyms(word=clean_word)
+#    print(i, synonyms)
+    # initializing string   
+    test_list = synonyms
+    test_list.append(clean_word)
+    # initializing split index list  
+    res = chunks(test_list,5)
+
+    # printing original list 
+    print (i, "The original list is : " + str(test_list)) 
+
+    # printing original split index list 
+    print ("The original split index list : " + str(chunks)) 
+
+    # using list comprehension + zip() 
+    # to perform custom list split 
+    #res = [test_list[i : j] for i, j in zip([0] + 
+    #          split_list, split_list + [None])] 
+
+    # printing result 
+    print (i,"=", word, "The splitted lists are : " +  str(res)) 
+    
+    for j,word in enumerate(res):
+        try:
+            pytrend = TrendReq()
+            pytrend.build_payload(kw_list=remove_duplicates(word), timeframe='today 12-m', geo = 'DE', gprop='')
+            interest_over_time_df1 = pytrend.interest_over_time() 
+            print("big loop",i, "small loop" ,j, word, clean_word, interest_over_time_df1.head())
+            interest_over_time_df1.merge(interest_over_time_df1, how='left')
+            sns.set(color_codes=True)
+            dx = interest_over_time_df1.plot.line(figsize = (9,6), title = "Interest Over Time Google")
+            dx.set_xlabel('Date')
+            dx.set_ylabel('Trends Index')
+            dx.tick_params(axis='both', which='major', labelsize=13)
+ 
+            if len(interest_over_time_df1) == 0:
+                break
+                
+                print(word)
+
+            
+        # to get the long version of synonyms as a list
+        #synonyms_long = open_thesaurus.get_synonyms(word=word, form="long")
+        
+        except Exception as exc: 
+            print(exc)
